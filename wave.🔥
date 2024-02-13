@@ -1,0 +1,42 @@
+import math
+from python import Python
+from collections.vector import DynamicVector
+
+from tensor import Tensor, TensorSpec, TensorShape
+
+alias precision = DType.float16
+alias sample = DType.float16
+alias amp = DType.float16
+
+alias mono = 1
+alias stereo = 2
+alias sr = 44100
+alias tsize = 2 ** 16
+
+
+fn sinef (time: Int) -> Float16:
+  return math.sin[precision, mono](2 * 3.1415 * time / sr) # pi?
+
+def main():
+  var np = Python.import_module("numpy")
+  var wavefile = Python.import_module("wavefile")
+
+  def sinusoid(samples, f, samplerate=44100):
+    return np.sin(np.linspace(0, 2*np.pi*f*samples/samplerate, samples))[:,np.newaxis]
+
+  def channels(*args):
+      return np.hstack(args).T
+
+
+  var audio = channels(sinusoid(100000, 440), sinusoid(100000, 880), sinusoid(100000, 1760))
+
+  wavefile.save("sinusoid.wav", audio, 44100)
+  # let sineTable = [ i for i in range(0, sr) ]
+  # not supported yet
+  # SIMD?
+  # var s = SIMD[precision, sr]()
+  # vector?
+  # var vec = DynamicVector[SIMD[precision,1]](sr)
+  # for i in range(0, sr):
+  #   vec.push_back(sinef(i))
+
