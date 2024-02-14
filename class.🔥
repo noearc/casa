@@ -1,0 +1,43 @@
+import math
+from python import Python
+from collections.vector import DynamicVector
+
+from tensor import Tensor, TensorSpec, TensorShape
+
+alias precision = DType.float16
+alias sample = DType.float16
+alias amp = DType.float16
+
+alias mono = 1
+alias stereo = 2
+alias sr = 44100
+alias tsize = 2 ** 16
+
+@value
+struct Wave:
+  """Represents a discrete-time waveform."""
+  var ys : DynamicVector[Int]
+  var ts : DynamicVector[Int]
+  var framerate : Int
+
+  # fn copy(self):
+
+  fn start(inout self) -> Float64:
+    return self.ts[0]
+
+  fn start(inout self) -> Float64:
+    return self.ts[-1]
+
+  fn duration(inout self) -> Float64:
+    return self.ys.size / self.framerate
+
+fn main():
+  var ys = DynamicVector[Int](10)
+  var ts = DynamicVector[Int](10)
+  for i in range(10):
+    ys.push_back(i)
+    ts.push_back(i)
+  var w = Wave(ys, ts, 100)
+  print(w.duration())
+
+
