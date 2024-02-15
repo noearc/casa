@@ -1,0 +1,69 @@
+import math
+from python import Python
+from collections.vector import DynamicVector
+from tensor import Tensor, TensorShape, TensorSpec
+
+alias precision = DType.float16
+# alias sample = DType.float16
+alias sample = DType.float16
+alias amp = DType.float16
+
+alias mono = 1
+alias stereo = 2
+alias sr = 44100
+alias tsize = 2 ** 16
+
+
+@value
+struct Wave:
+  """Represents a discrete-time waveform."""
+  # var ys : DynamicVector[Int]
+  # var ts : DynamicVector[Int]
+  var ys : Tensor[sample]
+  var ts : Tensor[sample]
+  var framerate : Float16
+
+  # fn copy(self):
+  #fn __str__(self: Self) -> String:
+  #  return self.ys.__repr__()
+
+  fn start(self: Self) -> Float16:
+    return self.ts[0]
+
+  fn shape(self: Self) -> TensorShape:
+    return self.ts.shape()
+
+#  fn duration(inout self) -> Float64:
+#    return self.ys.size / self.framerate
+
+@value
+struct Signal:
+
+  fn evaluate(self: Self, ts: Tensor[sample]) -> Tensor[sample]:
+    return ts
+
+  fn make_wave(self: Self, duration: Float16 = 1, start: Float16 = 0, framerate: Float16 = 11025) -> Wave:
+
+    let n = math.round(duration * framerate).to_int()
+    var tensor = Tensor[sample](n)
+    for i in range(n):
+      tensor[i] = i
+    var fr = Tensor[sample](1)
+    fr[0] = framerate
+    var st = Tensor[sample](1)
+    st[0] = start
+    try:
+      let ts = st + tensor / fr
+      let ys = self.evaluate(ts)
+    except e:
+      print(e)
+    return Wave(ys, ts, framerate)
+
+fn main():
+  var monoSpec = TensorSpec(sample, 10)
+  var ys = Tensor[sample](monoSpec)
+  var ts = Tensor[sample](monoSpec)
+  var w = Wave(ys, ts, 100)
+  var sig = Signal()
+  w = sig.make_wave()
+  # print(w.shape())
