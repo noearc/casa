@@ -201,7 +201,7 @@ struct Byte2Tensor:
     fn __str__(self) -> String:
         return "B2T<[" + str(self.id1) + ", " + str(self.id2) + "]>"
 
-
+@value
 struct file_byte_reader:
     var current_index: Int
     var file : FileHandle
@@ -209,6 +209,12 @@ struct file_byte_reader:
     fn __init__(inout self, path:String) raises:
         self.file = open(path, "rb")
         self.current_index = 0
+    # TODO: are these 2 right?
+    fn seek(inout self, offset: Int) raises:
+        self.current_index = offset
+
+    fn tell(inout self) raises -> Int:
+        return self.current_index
 
     fn read_text(inout self, num_bytes: Int) raises -> String:
         let bytes = self.file.read_bytes(num_bytes)
@@ -252,16 +258,18 @@ fn decode_single_byte(data: Tensor[si8]) -> Int:
 
 
 struct _Chunk:
-  # var file : FileHandle
+  var file : file_byte_reader
   # var align : Bool
   var bigendian : Bool
   var chunkname : String
   var chunksize : Int
   var size_read : Int
   var closed : Bool
+  var offset : Int
 
   fn __init__(inout self, inout file: file_byte_reader, bigendian : Bool = True, inclheader : Bool = True) raises:
       var strflag = ""
+      self.file = file
       self.bigendian = bigendian
       self.closed = False
       # # self.align = align      # whether to align to word (2-byte) boundaries
@@ -277,20 +285,25 @@ struct _Chunk:
       if inclheader:
           self.chunksize = self.chunksize - 8 # subtract header
       self.size_read = 0
-      # try:
-      #     self.offset = self.file.tell()
+      self.offset = self.file.tell()
+
+      # self.offset = self.file.tell()
       # except (AttributeError, OSError):
       #     self.seekable = False
       # else:
       #     self.seekable = True
-      fn getname(self : Self) -> String:
-          return self.chunkname
+
+  fn getname(self : Self) -> String:
+      return self.chunkname
+
+  fn seek(inout self : Self, pos : Int, whence : Int = 0) raises:
+    self.file.seek(self.offset + pos)
+    self.size_read = pos
+
 
 fn _read_fmt_chunk(inout file: file_byte_reader) raises:
     let chunkname = file.read_text(4)
-    print(chunkname)
     let size_of_fmt = file.read_number2(4)
-    print(size_of_fmt)
     var bytes_read = 0
     # if size_of_fmt < 16:
     #     raise Error("Size of fmt chunk is not 16 bytes long.")
@@ -305,24 +318,26 @@ fn _read_fmt_chunk(inout file: file_byte_reader) raises:
     bytes_read += 16
 
 
-struct Wave_read:
-    # var _soundpos : Int
-    var _file : _Chunk
-    fn __init__(inout self : Self, f : String) raises:
-        var fobj = file_byte_reader("test.wav")
-        # try:
-        self.initfp(fobj)
-        # except:
-        #     ...
-            # fobj.close()
-
-    fn initfp(inout self : Self, inout file: file_byte_reader) raises:
-        # self._convert = None
-        # self._soundpos = 0
-        self._file = _Chunk(file)
+# struct Wave_read:
+#     # var _soundpos : Int
+#     var _file : _Chunk
+#
+#     fn __init__(inout self : Self, f : String) raises:
+#         var fobj = file_byte_reader("test.wav")
+#         # try:
+#         self.initfp(fobj)
+#         # except:
+#         #     ...
+#             # fobj.close()
+#
+#     fn initfp(inout self : Self, inout file: file_byte_reader) raises:
+#         # self._convert = None
+#         # self._soundpos = 0
+#         self._file = _Chunk(file)
 
 fn main() raises:
-    # var fh = file_byte_reader("test.wav")
-    # let c = _Chunk(fh)
-    let a = Wave_read("test.wav")
+    var fh = file_byte_reader("test.wav")
+    let c = _Chunk(fh)
+    print(c.getname())
+    # let a = Wave_read("test.wav")
     # _read_fmt_chunk(a)
